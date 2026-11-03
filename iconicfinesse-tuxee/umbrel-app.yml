@@ -1,5 +1,6 @@
 manifestVersion: 1
 id: iconicfinesse-tuxee
+icon: https://raw.githubusercontent.com/agent0ai/tuxee/main/assets/tuxee-logo-emblem.png
 storage:
   dataRoot: data
 category: developer
@@ -46,7 +47,10 @@ dependencies: []
 repo: https://github.com/agent0ai/tuxee
 support: https://github.com/agent0ai/tuxee/issues
 port: 8642
-gallery: []
+gallery:
+  - https://raw.githubusercontent.com/agent0ai/tuxee/main/.github/resources/screenshots/file-managers-persistent-terminals.webp
+  - https://raw.githubusercontent.com/agent0ai/tuxee/main/.github/resources/screenshots/workspaces-grid-layouts.webp
+  - https://raw.githubusercontent.com/agent0ai/tuxee/main/.github/resources/screenshots/editor-media-viewer.webp
 path: ""
 defaultUsername: root
 defaultPassword: ""
