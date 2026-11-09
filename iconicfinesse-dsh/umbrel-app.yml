@@ -1,51 +1,58 @@
 manifestVersion: 1
 id: iconicfinesse-dsh
+icon: https://raw.githubusercontent.com/IconicFinesse/dsh-umbrel/main/branding/icon.png
 storage:
   dataRoot: data
 category: developer
 name: DeepSeek Harness
-version: "1.1.1"
+version: "1.1.2"
 tagline: DeepSeek's plugin-based agent harness — password front door, always on the latest dsh
 description: >-
-  DeepSeek Harness (dsh) is DeepSeek's open-source, fully modular agent
-  harness: everything is a plugin, and it can work with DeepSeek models or
-  any OpenAI-compatible provider you configure (bring your own API keys).
+  DeepSeek Harness (dsh) is an open-source agent harness developed by
+  DeepSeek AI. It is built on an everything-is-a-plugin architecture and
+  powered by Cordis — sessions, workspaces, tools, model providers, and
+  automation are all plugins that can be added, swapped, or extended.
+  Bring your own model access: DeepSeek models, or any OpenAI-compatible
+  provider you configure with your own API keys.
 
 
-  This package wraps dsh for Umbrel with a small password gate in front of
-  it, because dsh's own web sign-in is a one-time launch-token link — not
-  something you want in a browser URL. The first time you open the app
-  you'll create a password; that password (no username, nothing to look
-  up) is your sign-in from then on. The gate exchanges dsh's token
-  server-side, so no token ever appears in your browser — and the gate
-  session never expires, so signing in is a one-time thing.
+  DeepSeek Harness is in developer preview and iterating rapidly —
+  expect compatibility-breaking changes between releases.
 
 
-  **Updates:** the harness updates itself. On every app start it checks npm
-  for the latest dsh release, installs it beside the current one, verifies
-  it runs, and only then swaps it in — the previous version is kept as a
-  rollback, and a failed update simply keeps the old version serving. Your
-  data (providers, API keys, profiles, plugins, sessions) lives separately
-  in the app's data folder and is never touched by an update. To freeze on
-  a specific version instead, put its version number in
-  `data/dsh-version.txt` and restart the app.
+  **On Umbrel:** this package installs dsh as a one-click Umbrel app,
+  with a small password gate in front of the Web UI (dsh's own sign-in
+  is a one-time launch-token link — not something you want in a browser
+  URL). First open: you create a password. That password, no username,
+  is your sign-in from then on, and the gate session doesn't expire.
+  The gate exchanges dsh's token server-side, so no token ever appears
+  in your browser.
 
 
-  **Scope:** inside the app, the agent's "full access" reaches the app's
-  own container and data folder — not the Umbrel host. Its default
-  workspace is the data folder's home directory; add more workspaces from
-  the dsh interface.
+  **Updates:** the harness updates itself — every app start checks npm
+  for the latest dsh, installs it beside the current one, verifies it
+  runs, and only then swaps it in, keeping the old version as a
+  rollback. Your data (providers, API keys, profiles, plugins,
+  sessions) lives separately in the app's data folder and is never
+  touched by an update. To freeze on a specific version instead, put
+  its version number in `data/dsh-version.txt` and restart the app.
 
 
-  dsh is a 0.2.x developer preview from DeepSeek (MIT licensed); expect
-  occasional breaking changes between releases. This community package is
-  maintained by IconicFinesse.
+  **Scope:** inside the app, the agent's "full access" reaches the
+  app's own container and data folder — not the Umbrel host. Its
+  default workspace is the data folder's home directory; add more
+  workspaces from the dsh interface.
+
+
+  Community package maintained by IconicFinesse. Not an official
+  DeepSeek release; not affiliated with or endorsed by DeepSeek AI.
+  dsh is MIT-licensed software by DeepSeek AI.
 releaseNotes: >-
-  1.1.1: bug fix — the harness UI could sit at "Reconnecting.." forever
-  and workspace picking failed with HTTP 403. dsh fences its API with a
-  strict same-origin check, and the gate now presents a matching Origin
-  alongside the Host it already rewrote, so the app works however you
-  reach it (umbrel.local, LAN IP, or a tunnel host). No data changes.
+  1.1.2: store listing refresh — the app now has its proper icon (the
+  official DeepSeek Harness whale mark, taken from the product itself)
+  and a rewritten description based on upstream's own, with the Umbrel
+  packaging notes kept. Listing only: the harness and the app are
+  unchanged.
 developer: DeepSeek AI
 website: https://github.com/deepseek-ai/deepseek-harness
 dependencies: []
