@@ -1,0 +1,56 @@
+manifestVersion: 1
+id: iconicfinesse-dsh
+storage:
+  dataRoot: data
+category: developer
+name: DeepSeek Harness
+version: "1.0.0"
+tagline: DeepSeek's plugin-based agent harness — password front door, always on the latest dsh
+description: >-
+  DeepSeek Harness (dsh) is DeepSeek's open-source, fully modular agent
+  harness: everything is a plugin, and it can work with DeepSeek models or
+  any OpenAI-compatible provider you configure (bring your own API keys).
+
+
+  This package wraps dsh for Umbrel with a small password gate in front of
+  it, because dsh's own web sign-in is a one-time launch-token link — not
+  something you want in a browser URL. Log in as **braukw** with the app
+  password shown by Umbrel on this page; the gate exchanges dsh's token
+  server-side, so no token ever appears in your browser. Sessions last 30
+  days.
+
+
+  **Updates:** the harness updates itself. On every app start it checks npm
+  for the latest dsh release, installs it beside the current one, verifies
+  it runs, and only then swaps it in — the previous version is kept as a
+  rollback, and a failed update simply keeps the old version serving. Your
+  data (providers, API keys, profiles, plugins, sessions) lives separately
+  in the app's data folder and is never touched by an update. To freeze on
+  a specific version instead, put its version number in
+  `data/dsh-version.txt` and restart the app.
+
+
+  **Scope:** inside the app, the agent's "full access" reaches the app's
+  own container and data folder — not the Umbrel host. Its default
+  workspace is the data folder's home directory; add more workspaces from
+  the dsh interface.
+
+
+  dsh is a 0.2.x developer preview from DeepSeek (MIT licensed); expect
+  occasional breaking changes between releases. This community package is
+  maintained by IconicFinesse.
+releaseNotes: >-
+  First release: dsh with the password gate, latest-tracking self-updates
+  with automatic rollback, and all state in the app data folder.
+developer: DeepSeek AI
+website: https://github.com/deepseek-ai/deepseek-harness
+dependencies: []
+repo: https://github.com/IconicFinesse/dsh-umbrel
+support: https://github.com/deepseek-ai/deepseek-harness/issues
+port: 8647
+gallery: []
+path: ""
+defaultUsername: braukw
+defaultPassword: ""
+deterministicPassword: true
+submitter: IconicFinesse
