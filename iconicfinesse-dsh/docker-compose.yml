@@ -12,7 +12,7 @@ services:
   # on first open, the gate serves a one-time setup page. The credential
   # record lives in the shared data folder.
   web:
-    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:26b42351aab16fada41d0255c5f6a459b620262e31fe87ba6c061f7b7d8ff7a8
+    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:87b7c6332e805150df3db8fe7424f31b65472992b86acfb8bd8c48462ed6becb
     entrypoint: ["node", "/usr/local/lib/dsh-gate/gate.js"]
     restart: on-failure
     environment:
@@ -32,7 +32,7 @@ services:
   # folder converged to the latest release (see data/dsh-version.txt) and
   # writes the current launch link where the gate can read it.
   dsh:
-    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:26b42351aab16fada41d0255c5f6a459b620262e31fe87ba6c061f7b7d8ff7a8
+    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:87b7c6332e805150df3db8fe7424f31b65472992b86acfb8bd8c48462ed6becb
     restart: on-failure
     stop_grace_period: 30s
     volumes:
