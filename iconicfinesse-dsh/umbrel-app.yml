@@ -4,7 +4,7 @@ storage:
   dataRoot: data
 category: developer
 name: DeepSeek Harness
-version: "1.1.0"
+version: "1.1.1"
 tagline: DeepSeek's plugin-based agent harness — password front door, always on the latest dsh
 description: >-
   DeepSeek Harness (dsh) is DeepSeek's open-source, fully modular agent
@@ -41,10 +41,11 @@ description: >-
   occasional breaking changes between releases. This community package is
   maintained by IconicFinesse.
 releaseNotes: >-
-  1.1.0: a friendlier front door — no username and no Umbrel-issued
-  password. The first time you open the app you create your own password,
-  and that password signs you in from then on. Existing harness data is
-  untouched by the update.
+  1.1.1: bug fix — the harness UI could sit at "Reconnecting.." forever
+  and workspace picking failed with HTTP 403. dsh fences its API with a
+  strict same-origin check, and the gate now presents a matching Origin
+  alongside the Host it already rewrote, so the app works however you
+  reach it (umbrel.local, LAN IP, or a tunnel host). No data changes.
 developer: DeepSeek AI
 website: https://github.com/deepseek-ai/deepseek-harness
 dependencies: []
