@@ -5,6 +5,9 @@ services:
     environment:
       APP_HOST: iconicfinesse-dsh_web_1
       APP_PORT: 3081
+      # The gate is this app's sign-in (same pattern as Jellyfin): don't
+      # make Umbrel add its own session check in front of it.
+      PROXY_AUTH_ADD: "false"
 
   # The gate is the public face: a password front door that exchanges dsh's
   # launch token server-side, so no token ever appears in a browser URL.
