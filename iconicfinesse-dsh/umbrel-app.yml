@@ -4,7 +4,7 @@ storage:
   dataRoot: data
 category: developer
 name: DeepSeek Harness
-version: "1.0.0"
+version: "1.1.0"
 tagline: DeepSeek's plugin-based agent harness — password front door, always on the latest dsh
 description: >-
   DeepSeek Harness (dsh) is DeepSeek's open-source, fully modular agent
@@ -14,10 +14,11 @@ description: >-
 
   This package wraps dsh for Umbrel with a small password gate in front of
   it, because dsh's own web sign-in is a one-time launch-token link — not
-  something you want in a browser URL. Log in as **braukw** with the app
-  password shown by Umbrel on this page; the gate exchanges dsh's token
-  server-side, so no token ever appears in your browser. Sessions last 30
-  days.
+  something you want in a browser URL. The first time you open the app
+  you'll create a password; that password (no username, nothing to look
+  up) is your sign-in from then on. The gate exchanges dsh's token
+  server-side, so no token ever appears in your browser — and the gate
+  session never expires, so signing in is a one-time thing.
 
 
   **Updates:** the harness updates itself. On every app start it checks npm
@@ -40,8 +41,10 @@ description: >-
   occasional breaking changes between releases. This community package is
   maintained by IconicFinesse.
 releaseNotes: >-
-  First release: dsh with the password gate, latest-tracking self-updates
-  with automatic rollback, and all state in the app data folder.
+  1.1.0: a friendlier front door — no username and no Umbrel-issued
+  password. The first time you open the app you create your own password,
+  and that password signs you in from then on. Existing harness data is
+  untouched by the update.
 developer: DeepSeek AI
 website: https://github.com/deepseek-ai/deepseek-harness
 dependencies: []
@@ -50,7 +53,4 @@ support: https://github.com/deepseek-ai/deepseek-harness/issues
 port: 8647
 gallery: []
 path: ""
-defaultUsername: braukw
-defaultPassword: ""
-deterministicPassword: true
 submitter: IconicFinesse
