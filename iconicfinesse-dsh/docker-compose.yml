@@ -1,0 +1,39 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: iconicfinesse-dsh_web_1
+      APP_PORT: 3081
+
+  # The gate is the public face: a password front door that exchanges dsh's
+  # launch token server-side, so no token ever appears in a browser URL.
+  # Its credential record is seeded on first start from the Umbrel-issued
+  # app password and stored in the shared data folder.
+  web:
+    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:8b2a5c73f9acbcff3da263c4fe0398d0e8e51bf1df23ed564f9e8fdd861b8b4a
+    entrypoint: ["node", "/usr/local/lib/dsh-gate/gate.js"]
+    restart: on-failure
+    environment:
+      GATE_PORT: "3081"
+      GATE_USER: braukw
+      GATE_SEED_PASSWORD: ${APP_PASSWORD}
+      GATE_UPSTREAM_HOST: dsh
+      GATE_UPSTREAM_PORT: "3080"
+      GATE_LINK_FILE: /data/home/dsh-link.txt
+      GATE_CONFIG: /data/gate/gate.json
+      GATE_SUBTITLE: "on Umbrel — sign in to continue"
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+    depends_on:
+      - dsh
+
+  # The harness itself. The entrypoint keeps the dsh install in the data
+  # folder converged to the latest release (see data/dsh-version.txt) and
+  # writes the current launch link where the gate can read it.
+  dsh:
+    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:8b2a5c73f9acbcff3da263c4fe0398d0e8e51bf1df23ed564f9e8fdd861b8b4a
+    restart: on-failure
+    stop_grace_period: 30s
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
