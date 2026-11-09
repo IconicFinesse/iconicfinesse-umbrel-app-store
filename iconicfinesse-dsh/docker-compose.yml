@@ -8,16 +8,16 @@ services:
 
   # The gate is the public face: a password front door that exchanges dsh's
   # launch token server-side, so no token ever appears in a browser URL.
-  # Its credential record is seeded on first start from the Umbrel-issued
-  # app password and stored in the shared data folder.
+  # Password-only mode: no username, and until the owner creates a password
+  # on first open, the gate serves a one-time setup page. The credential
+  # record lives in the shared data folder.
   web:
-    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:8b2a5c73f9acbcff3da263c4fe0398d0e8e51bf1df23ed564f9e8fdd861b8b4a
+    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:26b42351aab16fada41d0255c5f6a459b620262e31fe87ba6c061f7b7d8ff7a8
     entrypoint: ["node", "/usr/local/lib/dsh-gate/gate.js"]
     restart: on-failure
     environment:
       GATE_PORT: "3081"
-      GATE_USER: braukw
-      GATE_SEED_PASSWORD: ${APP_PASSWORD}
+      GATE_AUTH_MODE: password-only
       GATE_UPSTREAM_HOST: dsh
       GATE_UPSTREAM_PORT: "3080"
       GATE_LINK_FILE: /data/home/dsh-link.txt
@@ -32,7 +32,7 @@ services:
   # folder converged to the latest release (see data/dsh-version.txt) and
   # writes the current launch link where the gate can read it.
   dsh:
-    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:8b2a5c73f9acbcff3da263c4fe0398d0e8e51bf1df23ed564f9e8fdd861b8b4a
+    image: ghcr.io/iconicfinesse/dsh-umbrel@sha256:26b42351aab16fada41d0255c5f6a459b620262e31fe87ba6c061f7b7d8ff7a8
     restart: on-failure
     stop_grace_period: 30s
     volumes:
