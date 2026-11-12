@@ -5,7 +5,7 @@ storage:
   dataRoot: data
 category: developer
 name: Tuxee
-version: "v1.0.2"
+version: "v1.3.0"
 tagline: A tiny Linux workspace for your server — files and persistent terminals in the browser
 description: >-
   ⚠️ **Warning:** Tuxee gives you a root terminal and full file access to its
@@ -40,7 +40,14 @@ description: >-
 
     - **Lightweight and fast:** based on Debian slim with a core written
       in Go — around 20 MB of RAM in normal use and a ~60 MB image.
-releaseNotes: ""
+releaseNotes: >-
+  Tuxee v1.3.0 (upstream agent0ai/tuxee, via v1.1.0–v1.3.0): shortcut
+  terminals stay open after commands finish, terminal display is preserved
+  across connection recovery, less hidden terminal rendering and GUI
+  streaming work, command shortcuts in desktop and context menus, a Safari
+  terminal WebSocket fix, and mobile/minimized tab label improvements. No
+  changes to persistence or login behaviour — files, /root, /init and state
+  carry over as before.
 developer: Agent Zero AI
 website: https://tuxee.agent-zero.ai
 dependencies: []
