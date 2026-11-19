@@ -1,0 +1,51 @@
+manifestVersion: 1
+id: iconicfinesse-firecrawl
+icon: https://github.com/firecrawl.png
+storage:
+  dataRoot: data
+category: ai
+name: Firecrawl
+version: "1.0.0"
+tagline: Web scraping and crawling API for AI agents — self-hosted
+description: >-
+  Firecrawl is an API service that takes a URL, crawls it, and converts
+  it into clean markdown or structured data. It handles JavaScript
+  rendering, so agents get readable page content instead of raw HTML
+  soup. Endpoints cover single-page scraping, whole-site crawling,
+  site mapping, and search.
+
+
+  **On Umbrel:** this package runs the full self-hosted Firecrawl
+  stack — API, Playwright renderer, Redis, RabbitMQ, and its queue
+  database — as one app with five internal services. Only the API
+  (port 3002) is exposed, on the local network only. It is wired as
+  a backend for other apps and agents: Hermes Agent already points
+  at this address (10.21.0.1:3002) and starts using it as soon as
+  the app is installed — no configuration needed.
+
+
+  **Notes:** the self-hosted API runs without authentication by
+  design (it is a local backend, the same arrangement as other
+  agent backends on this Umbrel), so don't publish port 3002 to
+  the internet. Firecrawl's search endpoint uses this Umbrel's
+  SearXNG app when it is installed. LLM-powered structured
+  extraction is not configured. Self-hosted Firecrawl does not
+  include the cloud-only Fire-engine anti-bot features.
+
+
+  Community package maintained by IconicFinesse. Not an official
+  Firecrawl release; not affiliated with or endorsed by Mendable.
+  Firecrawl is AGPL-3.0-licensed software by Mendable.
+releaseNotes: >-
+  1.0.0: first packaging — the complete self-hosted Firecrawl stack
+  as a single Umbrel app, images pinned by digest, queue database
+  and Redis persisted in the app's data folder.
+developer: Mendable
+website: https://www.firecrawl.dev
+dependencies: []
+repo: https://github.com/firecrawl/firecrawl
+support: https://github.com/firecrawl/firecrawl/issues
+port: 3002
+gallery: []
+path: ""
+submitter: IconicFinesse
