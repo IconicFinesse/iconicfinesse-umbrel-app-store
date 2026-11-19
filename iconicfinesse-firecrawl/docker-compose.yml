@@ -1,0 +1,144 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: iconicfinesse-firecrawl_web_1
+      APP_PORT: 3002
+      # Firecrawl's self-hosted API is an unauthenticated local backend
+      # for agents (Hermes points at it directly): don't put Umbrel's
+      # session check in front of it. Same arrangement as the dsh gate.
+      PROXY_AUTH_ADD: "false"
+
+  # The Firecrawl API + workers (upstream's "api" service). Renamed to
+  # "web" because that is the service the Umbrel app proxy routes to.
+  web:
+    image: ghcr.io/firecrawl/firecrawl@sha256:18c21311046714ca1e8e52d216cec91564eeb0c9dc36e5cda984b1be6c81107b
+    command: node dist/src/harness.js --start-docker
+    restart: on-failure
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3002"
+      EXTRACT_WORKER_PORT: "3004"
+      WORKER_PORT: "3005"
+      ENV: local
+      REDIS_URL: redis://redis:6379
+      REDIS_RATE_LIMIT_URL: redis://redis:6379
+      PLAYWRIGHT_MICROSERVICE_URL: http://playwright-service:3000/scrape
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: postgres
+      POSTGRES_HOST: nuq-postgres
+      POSTGRES_PORT: "5432"
+      NUQ_RABBITMQ_URL: amqp://rabbitmq:5672
+      USE_DB_AUTHENTICATION: "false"
+      NUM_WORKERS_PER_QUEUE: "8"
+      CRAWL_CONCURRENT_REQUESTS: "10"
+      MAX_CONCURRENT_JOBS: "5"
+      BROWSER_POOL_SIZE: "5"
+      # Guards Firecrawl's internal queue-admin page only; the API
+      # itself is unauthenticated local-backend by design (see above).
+      BULL_AUTH_KEY: firecrawl-internal
+      # Firecrawl's /search uses this Umbrel's own SearXNG app.
+      SEARXNG_ENDPOINT: http://searxng-web:8080
+    depends_on:
+      redis:
+        condition: service_started
+      playwright-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      nuq-postgres:
+        condition: service_healthy
+        required: false
+    cpus: 4.0
+    mem_limit: 8G
+    memswap_limit: 8G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+  # Headless Chromium renderer for JavaScript-heavy pages.
+  playwright-service:
+    image: ghcr.io/firecrawl/playwright-service@sha256:227ce3d8059173925a5a0697c63a1e947662cca934a609151651f578774edd5d
+    restart: on-failure
+    environment:
+      PORT: "3000"
+      MAX_CONCURRENT_PAGES: "10"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cpus: 2.0
+    mem_limit: 4G
+    memswap_limit: 4G
+    tmpfs:
+      - /tmp/.cache:noexec,nosuid,size=1g
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+  redis:
+    image: redis:alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
+    restart: on-failure
+    command: redis-server --bind 0.0.0.0 --appendonly yes
+    volumes:
+      - ${APP_DATA_DIR}/data/redis:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+        compress: "true"
+
+  rabbitmq:
+    image: rabbitmq:3-management@sha256:e582c0bc7766f3342496d8485efb5a1df782b5ce3886ad017e2eaae442311f69
+    restart: on-failure
+    command: rabbitmq-server
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+        compress: "true"
+
+  # Firecrawl's job-queue database (upstream's custom Postgres image).
+  nuq-postgres:
+    image: ghcr.io/firecrawl/nuq-postgres@sha256:d719b36160eac2fcbe16dc7e7360ddb9c82c40ea5da183d07bf4a755c6a0b2ae
+    restart: on-failure
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: postgres
+    volumes:
+      - ${APP_DATA_DIR}/data/nuq-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
