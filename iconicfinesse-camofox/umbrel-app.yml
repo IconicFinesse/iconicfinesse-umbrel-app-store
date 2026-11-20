@@ -1,0 +1,32 @@
+manifestVersion: 1
+id: iconicfinesse-camofox
+name: Camofox Browser
+tagline: Anti-detection browser backend for Hermes Agent
+icon: https://github.com/jo-inc.png
+category: ai
+version: "1.0.0"
+port: 9377
+description: >-
+  A self-hosted anti-detection browser server (jo-inc/camofox-browser,
+  wrapping the Camoufox Firefox fork) for Hermes Agent. Pages are read as
+  accessibility snapshots instead of raw HTML, fingerprints are spoofed at
+  the C++ level (navigator, WebGL, audio, WebRTC), and screenshots go to the
+  agent's vision model — so the agent can browse interactively, fill forms,
+  and get past most bot checks.
+
+
+  This install runs ANONYMOUSLY by design: no imported cookies and no
+  account logins. The API key in the package only separates local services
+  from each other; the port is not published outside the Umbrel app network,
+  and the app should stay that way — never port-forward it to the internet.
+developer: Jo Inc (upstream); packaged by IconicFinesse
+website: https://github.com/jo-inc/camofox-browser
+submitter: IconicFinesse
+submission: https://github.com/IconicFinesse/iconicfinesse-umbrel-app-store
+repo: https://github.com/jo-inc/camofox-browser
+support: https://github.com/jo-inc/camofox-browser/issues
+gallery: []
+dependencies: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
