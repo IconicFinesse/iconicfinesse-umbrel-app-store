@@ -1,0 +1,30 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: iconicfinesse-camofox_web_1
+      APP_PORT: 9377
+      PROXY_AUTH_ADD: "false"
+
+  web:
+    image: ghcr.io/iconicfinesse/camofox-browser@sha256:2a5628f3de20f574e0132c735327740e1ff1d616b2fda8a6c0aa664cb3fc5dd4
+    restart: on-failure
+    stop_grace_period: 1m
+    shm_size: "1gb"
+    environment:
+      PORT: "9377"
+      # Vendor crash telemetry OFF.
+      CAMOFOX_CRASH_REPORT_ENABLED: "false"
+      # Internal service key (local app network only; the port is never
+      # published). Hermes sends this as its bearer token.
+      CAMOFOX_ACCESS_KEY: "camofox-internal"
+      # No CAMOFOX_API_KEY on purpose: cookie import stays disabled.
+      # This browser runs anonymously — no logins, no imported sessions.
+    volumes:
+      - ${APP_DATA_DIR}/data:/root/.camofox
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
