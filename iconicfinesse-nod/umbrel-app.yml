@@ -5,7 +5,7 @@ storage:
   dataRoot: data
 category: ai
 name: Nod
-version: "1.0.2"
+version: "1.0.3"
 tagline: A personal agent that runs errands for you — self-hosted, bring your own model
 description: >-
   Nod is a personal agent from n8n Labs (a research preview) that carries
@@ -31,7 +31,7 @@ description: >-
 
 
   **Model:** this package is pre-wired for an OpenAI-compatible provider
-  (Synthetic, model hf:moonshotai/Kimi-K3.1-Pro) — the API key is seeded
+  (Synthetic, model hf:deepseek-ai/DeepSeek-V4.1-Flash-1017) — the API key is seeded
   into the app's data folder separately and is never part of this
   package. Usage analytics and feedback are disabled. No third-party
   app connections are configured.
