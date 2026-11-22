@@ -1,0 +1,57 @@
+manifestVersion: 1
+id: iconicfinesse-nod
+icon: https://github.com/n8n-io.png
+storage:
+  dataRoot: data
+category: ai
+name: Nod
+version: "1.0.0"
+tagline: A personal agent that runs errands for you — self-hosted, bring your own model
+description: >-
+  Nod is a personal agent from n8n Labs (a research preview) that carries
+  out everyday errands — research, bookings, form-filling, follow-ups —
+  in its own sandboxed Linux workspace and Chromium browser. Actions that
+  commit to something go through a server-side trust check first, and
+  secrets live in Nod's Vault, never inside the sandbox.
+
+
+  **On Umbrel:** this package runs the complete self-host stack from
+  Nod's own deployment guide — the server, its PostgreSQL database, the
+  browser and workspace containers it orchestrates, and the small proxy
+  that keeps the Docker socket out of the server itself — as one app
+  with six internal services. The images are built from a pinned
+  upstream commit by the nod-umbrel pipeline repo and pulled from GHCR;
+  nothing builds on the Umbrel host.
+
+
+  **Sign-in:** Nod has its own access token (Umbrel's session check is
+  not put in front of it). The token is generated on first install and
+  stored in the app's data folder as data/nod-secrets.env — open Nod,
+  and paste the NOD_AUTH_TOKEN value when it asks.
+
+
+  **Model:** this package is pre-wired for an OpenAI-compatible provider
+  (Synthetic, model hf:moonshotai/Kimi-K3.1-Pro) — the API key is seeded
+  into the app's data folder separately and is never part of this
+  package. Usage analytics and feedback are disabled. No third-party
+  app connections are configured.
+
+
+  Community package maintained by IconicFinesse. Not an official n8n
+  release; not affiliated with or endorsed by n8n GmbH. Nod is
+  Apache-2.0-licensed software by n8n GmbH.
+releaseNotes: >-
+  1.0.0: first packaging — Nod's self-host stack as a single Umbrel
+  app, built from upstream commit 5336545. Images published to GHCR by
+  the nod-umbrel pipeline; database, workspace and browser data persist
+  in the app's data folder; access token and vault key are generated
+  once on first install.
+developer: n8n GmbH
+website: https://github.com/n8n-io/nod
+dependencies: []
+repo: https://github.com/n8n-io/nod
+support: https://github.com/n8n-io/nod/issues
+port: 4310
+gallery: []
+path: ""
+submitter: IconicFinesse
