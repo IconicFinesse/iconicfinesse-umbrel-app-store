@@ -7,6 +7,12 @@ version: "3.7"
 # app's data folder, the server is the app proxy's "web" service, and
 # secrets arrive via exports.sh instead of a .env file. The optional
 # Caddy HTTPS profile is not included; the app proxy handles access.
+# Also: a small "web" edge proxy fronts the server (see its comment
+# below) because the server permits only its own localhost origin.
+# One more: an "init" service chowns the data folders to uid 1000 —
+# bind mounts arrive root-owned (unlike upstream's named volumes,
+# which inherit the images' ownership), and the browser worker
+# chmods its /data on startup and dies with EPERM otherwise.
 
 services:
   app_proxy:
@@ -18,8 +24,24 @@ services:
       # check in front of it.
       PROXY_AUTH_ADD: "false"
 
-  # The Nod server (upstream's "server" service).
-  web:
+  # One-shot: hand the data folders to the node user (uid 1000) before
+  # anything else starts. Postgres is deliberately not covered — its
+  # entrypoint fixes its own folder as root.
+  init:
+    image: ghcr.io/iconicfinesse/nod-workspace@sha256:300ce6bdb914c864db7a01c968c702b4f04b991195427f6203848a467d66e7ad
+    user: "0:0"
+    entrypoint: ['sh', '-c']
+    command:
+      [
+        'mkdir -p /data/server /data/workspaces /data/workspace-tools /data/browser && chown 1000:1000 /data/server /data/workspaces /data/workspace-tools /data/browser',
+      ]
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+    restart: "no"
+
+  # The Nod server (upstream's "server" service). Internal only —
+  # the "web" service below is what the app proxy (and visitors) reach.
+  server:
     image: ghcr.io/iconicfinesse/nod-server@sha256:47952558adf020ee2f086e38cc52b12bc7cb8b930e930b0f5c6e8d14cdfe6ecc
     restart: unless-stopped
     init: true
@@ -29,13 +51,17 @@ services:
       NOD_HOST: 0.0.0.0
       PORT: 4310
       NOD_DATA_ROOT: /var/lib/nod
-      NOD_PUBLIC_URL: http://umbrel.local:4310
+      # The server only accepts an HTTPS public origin, or HTTP on
+      # localhost (its own validator) — upstream's default shape.
+      # Access still happens through the app proxy at umbrel.local:4310
+      # / the LAN address; this value is the server's internal origin.
+      NOD_PUBLIC_URL: http://localhost:4310
       NOD_AUTH_TOKEN: ${NOD_AUTH_TOKEN}
       NOD_VAULT_KEY: ${NOD_VAULT_KEY}
       DATABASE_URL: postgres://nod:${NOD_POSTGRES_PASSWORD}@postgres:5432/nod
       DOCKER_HOST: tcp://runtime:2375
-      WORKSPACE_CONTAINER: nod-workspace
-      BROWSER_CONTAINER: nod-browser
+      WORKSPACE_CONTAINER: nod-workspace-nod-server
+      BROWSER_CONTAINER: nod-browser-nod-server
       # Bring-your-own model: an OpenAI-compatible provider (Synthetic).
       # The key itself is seeded into the app's data folder
       # (data/nod-llm.env) and reaches this service via exports.sh.
@@ -56,8 +82,10 @@ services:
     security_opt: [no-new-privileges:true]
     pids_limit: 512
     mem_limit: 2g
-    networks: [backend, control, outbound]
+    networks: [backend, control, outbound, frontend]
     depends_on:
+      init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       runtime:
@@ -72,6 +100,47 @@ services:
       timeout: 6s
       retries: 10
       start_period: 60s
+
+  # The public face of the app (the app proxy's target): a small
+  # header-rewriting proxy in front of the server. The Nod server
+  # permits exactly one host — its configured public origin, which
+  # must be localhost — so this presents every visitor (arriving as
+  # umbrel.local:4310 or the LAN address) as that origin. See
+  # edge-proxy.mjs for the full reasoning. Nod's own token sign-in
+  # still runs behind it.
+  web:
+    image: node:24.21.0-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20
+    restart: unless-stopped
+    init: true
+    command: ['node', '/app/edge-proxy.mjs']
+    environment:
+      PORT: 4310
+      UPSTREAM_HOST: server
+      UPSTREAM_PORT: 4310
+      PUBLIC_HOST: localhost:4310
+    volumes:
+      - ${APP_DATA_DIR}/edge-proxy.mjs:/app/edge-proxy.mjs:ro
+    networks: [default, frontend]
+    depends_on:
+      server:
+        condition: service_started
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 128m
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          'fetch("http://127.0.0.1:4310/").then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   postgres:
     image: postgres:17-alpine@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb
@@ -97,8 +166,8 @@ services:
     init: true
     command: ['node', '/app/docker-proxy.mjs']
     environment:
-      WORKSPACE_CONTAINER: nod-workspace
-      BROWSER_CONTAINER: nod-browser
+      WORKSPACE_CONTAINER: nod-workspace-nod-server
+      BROWSER_CONTAINER: nod-browser-nod-server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${APP_DATA_DIR}/docker-proxy.mjs:/app/docker-proxy.mjs:ro
@@ -113,7 +182,7 @@ services:
   # this one directly and throws sessions away).
   browser:
     image: ghcr.io/iconicfinesse/nod-browser@sha256:6f04848fac0657279aa8708ec3116dd6d05ca310f92be6c51abe837f685226ca
-    container_name: nod-browser
+    container_name: nod-browser-nod-server
     hostname: nod-browser
     restart: unless-stopped
     init: true
@@ -129,6 +198,9 @@ services:
       - /tmp:size=512m
       - /home/node:uid=1000,gid=1000,mode=700,size=256m
     networks: [browser]
+    depends_on:
+      init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
@@ -144,7 +216,7 @@ services:
   # The sandboxed Linux workspace Nod works in.
   workspace:
     image: ghcr.io/iconicfinesse/nod-workspace@sha256:300ce6bdb914c864db7a01c968c702b4f04b991195427f6203848a467d66e7ad
-    container_name: nod-workspace
+    container_name: nod-workspace-nod-server
     restart: unless-stopped
     init: true
     cap_drop: [ALL]
@@ -156,6 +228,8 @@ services:
       - ${APP_DATA_DIR}/data/workspace-tools:/home/node
     network_mode: service:workspace-network
     depends_on:
+      init:
+        condition: service_completed_successfully
       workspace-network:
         condition: service_healthy
         restart: true
@@ -185,6 +259,7 @@ services:
       retries: 10
 
 networks:
+  frontend:
   backend:
     internal: true
   control:
