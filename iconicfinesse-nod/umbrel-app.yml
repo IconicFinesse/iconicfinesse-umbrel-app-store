@@ -5,7 +5,7 @@ storage:
   dataRoot: data
 category: ai
 name: Nod
-version: "1.0.0"
+version: "1.0.1"
 tagline: A personal agent that runs errands for you — self-hosted, bring your own model
 description: >-
   Nod is a personal agent from n8n Labs (a research preview) that carries
