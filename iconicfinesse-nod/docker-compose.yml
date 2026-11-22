@@ -66,7 +66,7 @@ services:
       # The key itself is seeded into the app's data folder
       # (data/nod-llm.env) and reaches this service via exports.sh.
       LLM_PROVIDER: compatible
-      LLM_MODEL: hf:moonshotai/Kimi-K3.1-Pro
+      LLM_MODEL: hf:deepseek-ai/DeepSeek-V4.1-Flash-1017
       NOD_TRUST_MODEL: selected
       OPENAI_COMPATIBLE_BASE_URL: https://api.synthetic.new/v1
       OPENAI_COMPATIBLE_API_KEY: ${OPENAI_COMPATIBLE_API_KEY:-}
