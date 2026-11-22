@@ -1,0 +1,194 @@
+version: "3.7"
+
+# Nod (n8n Labs) self-host stack, packaged for Umbrel from upstream's
+# deployment/self-host/compose.yaml at commit 5336545. Differences from
+# upstream: the three built images come from GHCR (nod-umbrel pipeline)
+# instead of building locally, named volumes became bind mounts in the
+# app's data folder, the server is the app proxy's "web" service, and
+# secrets arrive via exports.sh instead of a .env file. The optional
+# Caddy HTTPS profile is not included; the app proxy handles access.
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: iconicfinesse-nod_web_1
+      APP_PORT: 4310
+      # Nod has its own access-token sign-in (generated on first
+      # install, see the app description): don't put Umbrel's session
+      # check in front of it.
+      PROXY_AUTH_ADD: "false"
+
+  # The Nod server (upstream's "server" service).
+  web:
+    image: ghcr.io/iconicfinesse/nod-server@sha256:47952558adf020ee2f086e38cc52b12bc7cb8b930e930b0f5c6e8d14cdfe6ecc
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      NOD_ENVIRONMENT: production
+      NOD_HOST: 0.0.0.0
+      PORT: 4310
+      NOD_DATA_ROOT: /var/lib/nod
+      NOD_PUBLIC_URL: http://umbrel.local:4310
+      NOD_AUTH_TOKEN: ${NOD_AUTH_TOKEN}
+      NOD_VAULT_KEY: ${NOD_VAULT_KEY}
+      DATABASE_URL: postgres://nod:${NOD_POSTGRES_PASSWORD}@postgres:5432/nod
+      DOCKER_HOST: tcp://runtime:2375
+      WORKSPACE_CONTAINER: nod-workspace
+      BROWSER_CONTAINER: nod-browser
+      # Bring-your-own model: an OpenAI-compatible provider (Synthetic).
+      # The key itself is seeded into the app's data folder
+      # (data/nod-llm.env) and reaches this service via exports.sh.
+      LLM_PROVIDER: compatible
+      LLM_MODEL: hf:moonshotai/Kimi-K3.1-Pro
+      NOD_TRUST_MODEL: selected
+      OPENAI_COMPATIBLE_BASE_URL: https://api.synthetic.new/v1
+      OPENAI_COMPATIBLE_API_KEY: ${OPENAI_COMPATIBLE_API_KEY:-}
+      NOD_ANALYTICS_ENABLED: "false"
+      NOD_FEEDBACK_ENABLED: "false"
+    volumes:
+      - ${APP_DATA_DIR}/data/server:/var/lib/nod
+      - ${APP_DATA_DIR}/data/workspaces:/var/lib/nod/workspaces
+    tmpfs:
+      - /tmp:uid=1000,gid=1000,mode=1777,size=256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 512
+    mem_limit: 2g
+    networks: [backend, control, outbound]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      runtime:
+        condition: service_started
+      browser:
+        condition: service_healthy
+      workspace:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'node', '/app/healthcheck.mjs']
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 60s
+
+  postgres:
+    image: postgres:17-alpine@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nod
+      POSTGRES_PASSWORD: ${NOD_POSTGRES_PASSWORD}
+      POSTGRES_DB: nod
+    volumes:
+      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nod -d nod']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # The docker-proxy: the only service that touches the Docker socket,
+  # so the server itself never does (upstream's design).
+  runtime:
+    image: node:24.21.0-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20
+    restart: unless-stopped
+    init: true
+    command: ['node', '/app/docker-proxy.mjs']
+    environment:
+      WORKSPACE_CONTAINER: nod-workspace
+      BROWSER_CONTAINER: nod-browser
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${APP_DATA_DIR}/docker-proxy.mjs:/app/docker-proxy.mjs:ro
+    networks: [control]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 128m
+
+  # Nod's own sandboxed Chromium (not a shared browser — Nod drives
+  # this one directly and throws sessions away).
+  browser:
+    image: ghcr.io/iconicfinesse/nod-browser@sha256:6f04848fac0657279aa8708ec3116dd6d05ca310f92be6c51abe837f685226ca
+    container_name: nod-browser
+    hostname: nod-browser
+    restart: unless-stopped
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    pids_limit: 1024
+    mem_limit: 3g
+    shm_size: 512m
+    volumes:
+      - ${APP_DATA_DIR}/data/browser:/data
+    tmpfs:
+      - /tmp:size=512m
+      - /home/node:uid=1000,gid=1000,mode=700,size=256m
+    networks: [browser]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          'const s=require("node:net").connect("/data/control.sock");s.on("connect",()=>{s.end();process.exit(0)});s.on("error",()=>process.exit(1))',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # The sandboxed Linux workspace Nod works in.
+  workspace:
+    image: ghcr.io/iconicfinesse/nod-workspace@sha256:300ce6bdb914c864db7a01c968c702b4f04b991195427f6203848a467d66e7ad
+    container_name: nod-workspace
+    restart: unless-stopped
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 512
+    mem_limit: 2g
+    volumes:
+      - ${APP_DATA_DIR}/data/workspaces:/workspace
+      - ${APP_DATA_DIR}/data/workspace-tools:/home/node
+    network_mode: service:workspace-network
+    depends_on:
+      workspace-network:
+        condition: service_healthy
+        restart: true
+    command: ['sleep', 'infinity']
+
+  workspace-network:
+    image: ghcr.io/iconicfinesse/nod-workspace@sha256:300ce6bdb914c864db7a01c968c702b4f04b991195427f6203848a467d66e7ad
+    pull_policy: never
+    dns: [1.1.1.1, 8.8.8.8]
+    user: root
+    restart: unless-stopped
+    init: true
+    entrypoint: /usr/local/bin/nod-workspace-network
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs:
+      - /tmp:size=1m
+    pids_limit: 32
+    mem_limit: 64m
+    networks: [workspace]
+    healthcheck:
+      test: ['CMD', 'test', '-f', '/tmp/network-ready']
+      interval: 2s
+      timeout: 3s
+      retries: 10
+
+networks:
+  backend:
+    internal: true
+  control:
+    internal: true
+  outbound:
+  browser:
+  workspace:
