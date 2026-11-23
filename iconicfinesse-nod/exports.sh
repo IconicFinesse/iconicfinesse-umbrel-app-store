@@ -1,24 +1,80 @@
 # Nod secrets: generated once on first install, then read back from the
 # app's data folder on every start. Nothing secret is in the package
-# itself. Formats match upstream's setup.sh (auth token + database
-# password are hex, the vault key is base64 for 32 bytes).
+# itself. The vault key is base64 for 32 bytes and the database
+# password is hex (upstream's formats); the sign-in token is a
+# generated passphrase — see the sign-in section below.
 
 NOD_APP_DIR="${APP_DATA_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 NOD_SECRETS_FILE="${NOD_APP_DIR}/data/nod-secrets.env"
 
+# --- Sign-in passphrase ------------------------------------------------
+# Nod's server requires the access token to be at least 43 characters
+# of [A-Za-z0-9_-]. A random hex string satisfies that but is miserable
+# to type, so the token is a passphrase instead: seven plain words
+# joined with dashes (always 48+ characters). The words are ordinary;
+# the randomness comes from shuf on the host at generation time.
+# Whenever a passphrase is first created, a one-time copy is left in
+# the operator's Files home as nod-access.txt so it can actually be
+# read back — delete that file once signed in (the sign-in cookie
+# lasts about a year).
+NOD_WORDS="amber anchor aspen atlas autumn beacon birch breeze cabin cedar chapel cinder cliff clover cobalt comet copper coral creek dawn delta desert ember falcon fern flame flint forest forge garnet glade granite grove harbor hazel heron hollow island ivy jade jasper juniper lagoon lantern laurel linden lotus lunar magnet maple marble meadow mesa mint mist moon moss mountain nectar noble north oak oasis olive onyx opal orchard otter palm pearl pebble pine pioneer plum pond poplar prairie quartz quiet quill rabbit radar radio rain raven redwood reef ridge river robin rock rocket rose rowan ruby saddle sage salmon sapphire scout shell shore silk silver slate slope snow solar song south sparrow spice spring spruce stable star stone storm stream summit surge swan swift talon temple tempo thistle thorn tide tiger timber topaz torch tower trail tree tulip turtle valley vapor vault velvet venture violet vista voice voyage walnut wave weaver west wheat wheel whisper wild willow wind window wine wing winter wisdom wolf wonder wood world yellow zenith zephyr"
+
+nod_make_passphrase() {
+  if ! command -v shuf >/dev/null 2>&1; then
+    openssl rand -hex 32
+    return
+  fi
+  local phrase="" tries=0
+  while [ ${#phrase} -lt 48 ] && [ ${tries} -lt 10 ]; do
+    phrase=$(printf '%s\n' $NOD_WORDS | shuf -n 7 | paste -sd- -)
+    tries=$((tries + 1))
+  done
+  if [ ${#phrase} -lt 43 ]; then
+    openssl rand -hex 32
+    return
+  fi
+  printf '%s' "${phrase}"
+}
+
+nod_drop_access_copy() {
+  # $1 = token value. Best effort: the operator's Files home.
+  local home_copy="/home/umbrel/umbrel/home/nod-access.txt"
+  printf '%s\n' "$1" > "${home_copy}" 2>/dev/null && chmod 644 "${home_copy}" 2>/dev/null
+  true
+}
+
 if [ ! -f "${NOD_SECRETS_FILE}" ]; then
   mkdir -p "${NOD_APP_DIR}/data"
+  NOD_NEW_TOKEN="$(nod_make_passphrase)"
   {
-    echo "NOD_AUTH_TOKEN=$(openssl rand -hex 32)"
+    echo "NOD_AUTH_TOKEN=${NOD_NEW_TOKEN}"
     echo "NOD_VAULT_KEY=$(openssl rand -base64 32)"
     echo "NOD_POSTGRES_PASSWORD=$(openssl rand -hex 24)"
   } > "${NOD_SECRETS_FILE}"
   chmod 600 "${NOD_SECRETS_FILE}"
+  nod_drop_access_copy "${NOD_NEW_TOKEN}"
 fi
 
 # shellcheck disable=SC1090
 . "${NOD_SECRETS_FILE}"
 export NOD_AUTH_TOKEN NOD_VAULT_KEY NOD_POSTGRES_PASSWORD
+
+# One-time migration (v1.0.4): installs created before this version
+# hold a machine-generated hex token. Replace just that line with a
+# passphrase — the vault key and database password stay untouched —
+# and leave the readable copy. The marker makes this run exactly
+# once; an operator-chosen token is never touched again.
+NOD_TOKEN_MARKER="${NOD_APP_DIR}/data/.passphrase-token-v1"
+if [ ! -f "${NOD_TOKEN_MARKER}" ]; then
+  if printf '%s' "${NOD_AUTH_TOKEN}" | grep -Eq '^[0-9a-f]{32,}$'; then
+    NOD_NEW_TOKEN="$(nod_make_passphrase)"
+    sed -i "s|^NOD_AUTH_TOKEN=.*|NOD_AUTH_TOKEN=${NOD_NEW_TOKEN}|" "${NOD_SECRETS_FILE}"
+    NOD_AUTH_TOKEN="${NOD_NEW_TOKEN}"
+    export NOD_AUTH_TOKEN
+    nod_drop_access_copy "${NOD_NEW_TOKEN}"
+  fi
+  touch "${NOD_TOKEN_MARKER}" 2>/dev/null || true
+fi
 
 # Optional operator-seeded LLM provider key (never part of the package).
 # Drop a file at data/nod-llm.env containing:
