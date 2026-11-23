@@ -10,8 +10,8 @@ NOD_SECRETS_FILE="${NOD_APP_DIR}/data/nod-secrets.env"
 # --- Sign-in passphrase ------------------------------------------------
 # Nod's server requires the access token to be at least 43 characters
 # of [A-Za-z0-9_-]. A random hex string satisfies that but is miserable
-# to type, so the token is a passphrase instead: seven plain words
-# joined with dashes (always 48+ characters). The words are ordinary;
+# to type, so the token is a passphrase instead: eight plain words
+# joined with dashes (about 50 characters). The words are ordinary;
 # the randomness comes from shuf on the host at generation time.
 # Whenever a passphrase is first created, a one-time copy is left in
 # the operator's Files home as nod-access.txt so it can actually be
@@ -25,8 +25,8 @@ nod_make_passphrase() {
     return
   fi
   local phrase="" tries=0
-  while [ ${#phrase} -lt 48 ] && [ ${tries} -lt 10 ]; do
-    phrase=$(printf '%s\n' $NOD_WORDS | shuf -n 7 | paste -sd- -)
+  while [ ${#phrase} -lt 45 ] && [ ${tries} -lt 10 ]; do
+    phrase=$(printf '%s\n' $NOD_WORDS | shuf -n 8 | paste -sd- -)
     tries=$((tries + 1))
   done
   if [ ${#phrase} -lt 43 ]; then
@@ -64,7 +64,7 @@ export NOD_AUTH_TOKEN NOD_VAULT_KEY NOD_POSTGRES_PASSWORD
 # passphrase — the vault key and database password stay untouched —
 # and leave the readable copy. The marker makes this run exactly
 # once; an operator-chosen token is never touched again.
-NOD_TOKEN_MARKER="${NOD_APP_DIR}/data/.passphrase-token-v1"
+NOD_TOKEN_MARKER="${NOD_APP_DIR}/data/.passphrase-token-v2"
 if [ ! -f "${NOD_TOKEN_MARKER}" ]; then
   if printf '%s' "${NOD_AUTH_TOKEN}" | grep -Eq '^[0-9a-f]{32,}$'; then
     NOD_NEW_TOKEN="$(nod_make_passphrase)"
