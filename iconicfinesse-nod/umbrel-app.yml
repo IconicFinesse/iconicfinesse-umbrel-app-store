@@ -5,7 +5,7 @@ storage:
   dataRoot: data
 category: ai
 name: Nod
-version: "1.0.4"
+version: "1.0.5"
 tagline: A personal agent that runs errands for you — self-hosted, bring your own model
 description: >-
   Nod is a personal agent from n8n Labs (a research preview) that carries
@@ -25,7 +25,7 @@ description: >-
 
 
   **Sign-in:** Nod has its own access token (Umbrel's session check is
-  not put in front of it). The token is a generated passphrase — seven
+  not put in front of it). The token is a generated passphrase — eight
   plain words joined with dashes — created on first install. A copy is
   left in your Files home as nod-access.txt so you can read it; paste
   it when Nod asks, then delete that file (the sign-in lasts about a
