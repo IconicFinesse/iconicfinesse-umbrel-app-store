@@ -5,7 +5,7 @@ storage:
   dataRoot: data
 category: ai
 name: Nod
-version: "1.0.3"
+version: "1.0.4"
 tagline: A personal agent that runs errands for you — self-hosted, bring your own model
 description: >-
   Nod is a personal agent from n8n Labs (a research preview) that carries
@@ -25,9 +25,12 @@ description: >-
 
 
   **Sign-in:** Nod has its own access token (Umbrel's session check is
-  not put in front of it). The token is generated on first install and
-  stored in the app's data folder as data/nod-secrets.env — open Nod,
-  and paste the NOD_AUTH_TOKEN value when it asks.
+  not put in front of it). The token is a generated passphrase — seven
+  plain words joined with dashes — created on first install. A copy is
+  left in your Files home as nod-access.txt so you can read it; paste
+  it when Nod asks, then delete that file (the sign-in lasts about a
+  year). The token itself lives in the app's data folder as
+  data/nod-secrets.env.
 
 
   **Model:** this package is pre-wired for an OpenAI-compatible provider
